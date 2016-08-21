@@ -1,0 +1,16 @@
+sudo: false
+
+addons:
+  apt:
+    packages:
+    - poppler-utils
+
+language: perl
+
+perl:
+  - "5.18"
+  - "5.20"
+  - "5.22"
+
+script:
+  - cover -test -report coveralls

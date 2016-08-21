@@ -1,0 +1,9 @@
+Changes
+LICENSE
+MANIFEST
+MANIFEST.SKIP
+Makefile.PL
+README
+eg/mojolite-demo.pl
+lib/Net/LDAP/SPNEGO.pm
+t/01basic.t
