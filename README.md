@@ -103,7 +103,7 @@ like this:
 
 2: C  --> S  GET ...
              Authorization: NTLM <base64-encoded type-1-message>
-   S  --> S  401 Unauthorized
+   S  --> C  401 Unauthorized
              WWW-Authenticate: NTLM <base64-encoded type-2-message>
 
 3: C  --> S  GET ...
