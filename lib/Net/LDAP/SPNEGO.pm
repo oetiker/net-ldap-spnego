@@ -1,11 +1,11 @@
 package Net::LDAP::SPNEGO;
-our $VERSION = '0.1.4';
+our $VERSION = '0.1.5';
 
 =encoding utf8
 
 =head1 NAME
 
-Net::LDAP::SPNEGO - Net::LDAP support for ntlm/spnego authentication
+Net::LDAP::SPNEGO - Net::LDAP support for NTLM/SPNEGO authentication
 
 =head1 SYNOPSIS
 
@@ -92,40 +92,42 @@ Net::LDAP::SPNEGO - Net::LDAP support for ntlm/spnego authentication
 
 =head1 DESCRIPTION
 
-B<Net::LDAP::SPNEGO> provides the essential building blocks to implement NTLM SSO
-for Windows clients to webservers. It can be used to proxy NTLM tokens
+C<Net::LDAP::SPNEGO> provides the essential building blocks to implement NTLM SSO
+from Windows clients to webservers. Its purpose is to proxy NTLM tokens
 from the webbrowser to an active directory server using the SPNEGO protocol.
 
-The dialog between browser and server in an NTLM authentication dialog looks
+The dialog between browser and the webserver in an NTLM authentication dialog looks
 like this:
 
  1: C  --> S  GET ...
-
- 2: C <--  S  401 Unauthorized
+    S  --> C  401 Unauthorized
               WWW-Authenticate: NTLM
 
- 3: C  --> S  GET ...
+ 2: C  --> S  GET ...
               Authorization: NTLM <base64-encoded type-1-message>
-
- 4: C <--  S  401 Unauthorized
+    S  --> S  401 Unauthorized
               WWW-Authenticate: NTLM <base64-encoded type-2-message>
 
- 5: C  --> S  GET ...
+ 3: C  --> S  GET ...
               Authorization: NTLM <base64-encoded type-3-message>
+    S  --> C 200 Ok
 
- 6: C <--  S  200 Ok
-
-In contrast to modern web apis, the NTLM authentication dialog relies on a presistant
-connection between browser and server to correlate steps 3 and 5 of the dialog.
+In contrast to modern web APIs, the NTLM authentication exchange relies on a presistant
+connection between browser and server to correlate steps 2 and 3 of the dialog.
 
 The example above uses L<Mojolicious::Lite> but there is no inherent link to
-that particular framework except that NTLM authentication relies on persistant
+that particular framework, except that NTLM authentication relies on a persistant
 http connetions (keepalive) to linke the multi step authentication together.
-In other words, a cgi implementation will not work, since the cgi process gets.
+In other words, a CGI implementation will not work, since the cgi process gets.
 restarted with every request.
 
 Windows will only engage in seamless NTLM negotiation with sites residing in the
 local zone this may have to be configured in the Internet Settings dialog.
+
+The module works with NTML as well as NTLMv2 tokens.
+
+If you are working with L<Mojolicious> you may find the L<Mojolicious::Plugin::SPNEGO>
+of interest.
 
 =head1 METHODS
 
@@ -148,17 +150,17 @@ use Encode;
 =head2 my $response = $ldap->bind_type1($type1B64)
 
 Start binding the ldap connection. The argument to this method is the base64 encoded type1
-NTLM token received from a browser request in the I<Authorization> header.
+NTLM token received from a browser request in the C<Authorization> header.
 
- Authorization: NTLM base64encodedntlmtoken
+ Authorization: NTLM Base64EncodedNtlmToken
 
-The bind_type1 call encodes this token in an SPNEGO message and uses it to
+The C<bind_type1> call encodes this token in an SPNEGO message and uses it to
 initiate a bind call to the active directory server.
 
-The bind_type1 call will return a L<Net::LDAP::Message> object received from the
+The C<bind_type1> call returns the L<Net::LDAP::Message> object received from the
 AD server in the same way the L<Net::LDAP> call will in a regular bind request.
-If the request has been successful the response has an I<ntlm_type2_base64>
-property you can hand to your webbrowser for the next step.
+If the request has been successful the response has an C<ntlm_type2_base64>
+property you can hand to your webbrowser to trigger a type3 reponse.
 
  WWW-Authenticate: NTLM $res->{ntlm_type2_base64}
 
@@ -190,16 +192,16 @@ sub bind_type1 {
 =head2 my $mesg = $ldap->bind_type3($type3B64)
 
 Complete binding the ldap connection. The argument to this method is the base64
-encoded type3 NTLM token received from a browser request in the I<Authorization>
+encoded type3 NTLM token received from the browser request in the C<Authorization>
 header.
 
- Authorization: NTLM base64encodedntlmtoken
+ Authorization: NTLM Base64EncodedNtlmToken
 
-The bind_type3 call will return a L<Net::LDAP::Message> object received from the
+The C<bind_type3> call returns the L<Net::LDAP::Message> object received from the
 AD server in the same way the L<Net::LDAP> call will in a regular bind request.
 
-The response object comes with an extra property: I<ldap_user_entry>
-containing the ldap user entry information.
+The successful response object comes with the extra property: C<ldap_user_entry>
+containing the ldap user information.
 
  {
    'pwdlastset' => '131153165937657397',
@@ -230,13 +232,12 @@ sub bind_type3 {
 =head2 my $group_hash = $ldap->get_value_ad_groups($username)
 
 Query the ldap server for all the users group memberships,
-including the primary group and all the inherited memberships due to
-a group being a member of another group.
+including the primary group and all the inherited group memberships.
 
-The function uses the magic I<member:1.2.840.113556.1.4.1941:> query
+The function uses the magic C<member:1.2.840.113556.1.4.1941:> query
 to effect a recursive search.
 
-The function returns a hash indexed by the I<sAMAccountName>s of the groups
+The function returns a hash indexed by the C<sAMAccountName> of the groups
 containing the DN and the description of each group.
 
  {
@@ -477,8 +478,9 @@ __END__
 =head1 EXAMPLE
 
 The included example script F<eg/mojolite-demo.pl> shows how to use the module to implement
-NTLM authentication for a L<Mojolicious::Lite> webapplication. Use the following steps
-to run:
+NTLM authentication for a L<Mojolicious::Lite> web application.
+
+Use the following steps to run the demo:
 
  $ perl Makefile.PL
  $ make 3rd
@@ -486,7 +488,7 @@ to run:
 
 Now connect with your webbrowser to the webserver runing on port 3000. If you
 login from a Windows host and the url you are connecting resides in the local zone,
-you will see (or rather not see) seemless authentication take place. Finally
+you will see (or rather not see) seemless authentication taking place. Finally
 a webpage will be displayed showing a list of groups you are a member of.
 
 The demo script stores your authentication in a cookie in your brower, so once
@@ -509,7 +511,8 @@ Copyright (c) 2016 by OETIKER+PARTNER AG. All rights reserved.
 
 =head1 LICENSE
 
-This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+This program is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
 
 =head1 AUTHOR
 

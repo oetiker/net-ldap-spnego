@@ -1,6 +1,6 @@
 # NAME
 
-Net::LDAP::SPNEGO - Net::LDAP support for ntlm/spnego authentication
+Net::LDAP::SPNEGO - Net::LDAP support for NTLM/SPNEGO authentication
 
 # SYNOPSIS
 
@@ -89,42 +89,44 @@ __DATA__
 
 # DESCRIPTION
 
-**Net::LDAP::SPNEGO** provides the essential building blocks to implement NTLM SSO
-for Windows clients to webservers. It can be used to proxy NTLM tokens
+`Net::LDAP::SPNEGO` provides the essential building blocks to implement NTLM SSO
+from Windows clients to webservers. Its purpose is to proxy NTLM tokens
 from the webbrowser to an active directory server using the SPNEGO protocol.
 
-The dialog between browser and server in an NTLM authentication dialog looks
+The dialog between browser and the webserver in an NTLM authentication dialog looks
 like this:
 
 ```
 1: C  --> S  GET ...
-
-2: C <--  S  401 Unauthorized
+   S  --> C  401 Unauthorized
              WWW-Authenticate: NTLM
 
-3: C  --> S  GET ...
+2: C  --> S  GET ...
              Authorization: NTLM <base64-encoded type-1-message>
-
-4: C <--  S  401 Unauthorized
+   S  --> S  401 Unauthorized
              WWW-Authenticate: NTLM <base64-encoded type-2-message>
 
-5: C  --> S  GET ...
+3: C  --> S  GET ...
              Authorization: NTLM <base64-encoded type-3-message>
-
-6: C <--  S  200 Ok
+   S  --> C 200 Ok
 ```
 
-In contrast to modern web apis, the NTLM authentication dialog relies on a presistant
-connection between browser and server to correlate steps 3 and 5 of the dialog.
+In contrast to modern web APIs, the NTLM authentication exchange relies on a presistant
+connection between browser and server to correlate steps 2 and 3 of the dialog.
 
 The example above uses [Mojolicious::Lite](https://metacpan.org/pod/Mojolicious::Lite) but there is no inherent link to
-that particular framework except that NTLM authentication relies on persistant
+that particular framework, except that NTLM authentication relies on a persistant
 http connetions (keepalive) to linke the multi step authentication together.
-In other words, a cgi implementation will not work, since the cgi process gets.
+In other words, a CGI implementation will not work, since the cgi process gets.
 restarted with every request.
 
 Windows will only engage in seamless NTLM negotiation with sites residing in the
 local zone this may have to be configured in the Internet Settings dialog.
+
+The module works with NTML as well as NTLMv2 tokens.
+
+If you are working with [Mojolicious](https://metacpan.org/pod/Mojolicious) you may find the [Mojolicious::Plugin::SPNEGO](https://metacpan.org/pod/Mojolicious::Plugin::SPNEGO)
+of interest.
 
 # METHODS
 
@@ -133,19 +135,19 @@ local zone this may have to be configured in the Internet Settings dialog.
 ## my $response = $ldap->bind\_type1($type1B64)
 
 Start binding the ldap connection. The argument to this method is the base64 encoded type1
-NTLM token received from a browser request in the _Authorization_ header.
+NTLM token received from a browser request in the `Authorization` header.
 
 ```
-Authorization: NTLM base64encodedntlmtoken
+Authorization: NTLM Base64EncodedNtlmToken
 ```
 
-The bind\_type1 call encodes this token in an SPNEGO message and uses it to
+The `bind_type1` call encodes this token in an SPNEGO message and uses it to
 initiate a bind call to the active directory server.
 
-The bind\_type1 call will return a [Net::LDAP::Message](https://metacpan.org/pod/Net::LDAP::Message) object received from the
+The `bind_type1` call returns the [Net::LDAP::Message](https://metacpan.org/pod/Net::LDAP::Message) object received from the
 AD server in the same way the [Net::LDAP](https://metacpan.org/pod/Net::LDAP) call will in a regular bind request.
-If the request has been successful the response has an _ntlm\_type2\_base64_
-property you can hand to your webbrowser for the next step.
+If the request has been successful the response has an `ntlm_type2_base64`
+property you can hand to your webbrowser to trigger a type3 reponse.
 
 ```
 WWW-Authenticate: NTLM $res->{ntlm_type2_base64}
@@ -154,18 +156,18 @@ WWW-Authenticate: NTLM $res->{ntlm_type2_base64}
 ## my $mesg = $ldap->bind\_type3($type3B64)
 
 Complete binding the ldap connection. The argument to this method is the base64
-encoded type3 NTLM token received from a browser request in the _Authorization_
+encoded type3 NTLM token received from the browser request in the `Authorization`
 header.
 
 ```
-Authorization: NTLM base64encodedntlmtoken
+Authorization: NTLM Base64EncodedNtlmToken
 ```
 
-The bind\_type3 call will return a [Net::LDAP::Message](https://metacpan.org/pod/Net::LDAP::Message) object received from the
+The `bind_type3` call returns the [Net::LDAP::Message](https://metacpan.org/pod/Net::LDAP::Message) object received from the
 AD server in the same way the [Net::LDAP](https://metacpan.org/pod/Net::LDAP) call will in a regular bind request.
 
-The response object comes with an extra property: _ldap\_user\_entry_
-containing the ldap user entry information.
+The successful response object comes with the extra property: `ldap_user_entry`
+containing the ldap user information.
 
 ```perl
 {
@@ -185,13 +187,12 @@ containing the ldap user entry information.
 ## my $group\_hash = $ldap->get\_value\_ad\_groups($username)
 
 Query the ldap server for all the users group memberships,
-including the primary group and all the inherited memberships due to
-a group being a member of another group.
+including the primary group and all the inherited group memberships.
 
-The function uses the magic _member:1.2.840.113556.1.4.1941:_ query
+The function uses the magic `member:1.2.840.113556.1.4.1941:` query
 to effect a recursive search.
 
-The function returns a hash indexed by the _sAMAccountName_s of the groups
+The function returns a hash indexed by the `sAMAccountName` of the groups
 containing the DN and the description of each group.
 
 ```perl
@@ -214,8 +215,9 @@ containing the DN and the description of each group.
 # EXAMPLE
 
 The included example script `eg/mojolite-demo.pl` shows how to use the module to implement
-NTLM authentication for a [Mojolicious::Lite](https://metacpan.org/pod/Mojolicious::Lite) webapplication. Use the following steps
-to run:
+NTLM authentication for a [Mojolicious::Lite](https://metacpan.org/pod/Mojolicious::Lite) web application.
+
+Use the following steps to run the demo:
 
 ```
 $ perl Makefile.PL
@@ -225,7 +227,7 @@ $ env AD_SERVER=ad-server.example.com ./eg/mojolite-demo.pl deamon
 
 Now connect with your webbrowser to the webserver runing on port 3000. If you
 login from a Windows host and the url you are connecting resides in the local zone,
-you will see (or rather not see) seemless authentication take place. Finally
+you will see (or rather not see) seemless authentication taking place. Finally
 a webpage will be displayed showing a list of groups you are a member of.
 
 The demo script stores your authentication in a cookie in your brower, so once
@@ -248,7 +250,8 @@ Copyright (c) 2016 by OETIKER+PARTNER AG. All rights reserved.
 
 # LICENSE
 
-This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+This program is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
 
 # AUTHOR
 
