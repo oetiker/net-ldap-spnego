@@ -166,25 +166,25 @@ property you can hand to your webbrowser for the next step.
 
 
 sub bind_type1 {
- my $self = shift;
- my $tokenType1 = decode_base64(shift);
- my $resp = $self->_send_spnego($self->_wrap_type1_token($tokenType1));
- if ( $resp->code == LDAP_SASL_BIND_IN_PROGRESS){
-     if (my $serverSaslCreds = $resp->{serverSaslCreds}){
-         if (my $data = $self->_ber_encoder->decode($serverSaslCreds)){
-             if (my $token = $data->{value}[0]{value}[2]{value}) {
-                 if ($token =~ /^NTLMSSP/){
-                     my $base64Token = encode_base64($token);
-                     $base64Token =~ s/[\s\n\r]+//g;
-                     $resp->{ntlm_type2_base64} = $base64Token;
-                     return $resp;
-                 }
-             }
-         }
-     }
-     $resp->set_error(LDAP_LOCAL_ERROR, 'no type2 token found in server response');
- }
- return $resp;
+    my $self = shift;
+    my $tokenType1 = decode_base64(shift);
+    my $resp = $self->_send_spnego($self->_wrap_type1_token($tokenType1));
+    if ( $resp->code == LDAP_SASL_BIND_IN_PROGRESS){
+        if (my $serverSaslCreds = $resp->{serverSaslCreds}){
+            if (my $data = $self->_ber_encoder->decode($serverSaslCreds)){
+                if (my $token = $data->{value}[0]{value}[2]{value}) {
+                    if ($token =~ /^NTLMSSP/){
+                        my $base64Token = encode_base64($token);
+                        $base64Token =~ s/[\s\n\r]+//g;
+                        $resp->{ntlm_type2_base64} = $base64Token;
+                        return $resp;
+                    }
+                }
+            }
+        }
+        $resp->set_error(LDAP_LOCAL_ERROR, 'no type2 token found in server response');
+    }
+    return $resp;
 }
 
 =head2 my $mesg = $ldap->bind_type3($type3B64)
@@ -198,8 +198,8 @@ header.
 The bind_type3 call will return a L<Net::LDAP::Message> object received from the
 AD server in the same way the L<Net::LDAP> call will in a regular bind request.
 
-The respone will contain an additional an additional property: I<ldap_user_entry>
-containing the properties of the ldap user entry.
+The response object comes with an extra property: I<ldap_user_entry>
+containing the ldap user entry information.
 
  {
    'pwdlastset' => '131153165937657397',
@@ -217,29 +217,26 @@ containing the properties of the ldap user entry.
 =cut
 
 sub bind_type3 {
- my $self = shift;
- my $tokenType3 = decode_base64(shift);
- my $resp = $self->_send_spnego($self->_wrap_type3_token($tokenType3));
- if ($resp->code == LDAP_SUCCESS) {
-     my $username = $self->_get_user_from_ntlm_type3($tokenType3);
-     $resp->{ldap_user_entry} = $self->_get_ad_user($username);
- }
- return $resp;
+    my $self = shift;
+    my $tokenType3 = decode_base64(shift);
+    my $resp = $self->_send_spnego($self->_wrap_type3_token($tokenType3));
+    if ($resp->code == LDAP_SUCCESS) {
+        my $username = $self->_get_user_from_ntlm_type3($tokenType3);
+        $resp->{ldap_user_entry} = $self->_get_ad_user($username);
+    }
+    return $resp;
 }
-
-
-
 
 =head2 my $group_hash = $ldap->get_value_ad_groups($username)
 
-Query the ldap server for all the groups the user is a member of,
+Query the ldap server for all the users group memberships,
 including the primary group and all the inherited memberships due to
 a group being a member of another group.
 
-The function uses the magic I<member:1.2.840.113556.1.4.1941:> property
+The function uses the magic I<member:1.2.840.113556.1.4.1941:> query
 to effect a recursive search.
 
-The function returns a hash indexed by the sAMAccountNames of the groups
+The function returns a hash indexed by the I<sAMAccountName>s of the groups
 containing the DN and the description of each group.
 
  {
@@ -256,40 +253,41 @@ containing the DN and the description of each group.
     'dn' => 'CN=Domain Users,CN=Users,DC=oetiker,DC=local'
    }
  }
+
 =cut
 
 sub get_ad_groups {
- my $self = shift;
- my $user = $self->_get_ad_user(shift);
- return [] unless $user;
+    my $self = shift;
+    my $user = $self->_get_ad_user(shift);
+    return [] unless $user;
 
- my $userDN = $user->{distinguishedname};
- my $primaryGroupSID = _rid2sid($user->{objectsid},$user->{primarygroupid});
+    my $userDN = $user->{distinguishedname};
+    my $primaryGroupSID = _rid2sid($user->{objectsid},$user->{primarygroupid});
 
- my $primaryGroup = $self->search(
-     base => $self->_get_base_dn,
-     filter => '(objectSID='._ldap_quote($primaryGroupSID).')',
-     attrs => [],
- )->entry(0);
+    my $primaryGroup = $self->search(
+        base => $self->_get_base_dn,
+        filter => '(objectSID='._ldap_quote($primaryGroupSID).')',
+        attrs => [],
+    )->entry(0);
 
- my @groups = $self->search(
-     base => $self->_get_base_dn,
-     filter => '(|'
-         .'(objectSID='._ldap_quote($primaryGroupSID).')'
-         .'(member:1.2.840.113556.1.4.1941:='.$userDN.')'
-         .'(member:1.2.840.113556.1.4.1941:='.$primaryGroup->dn.')'
-     .')',
-     attrs => ['sAMAccountName','description']
- )->entries;
+    my @groups = $self->search(
+        base => $self->_get_base_dn,
+        filter => '(|'
+        .'(objectSID='._ldap_quote($primaryGroupSID).')'
+        .'(member:1.2.840.113556.1.4.1941:='.$userDN.')'
+        .'(member:1.2.840.113556.1.4.1941:='.$primaryGroup->dn.')'
+        .')',
+        attrs => ['sAMAccountName','description']
+    )->entries;
 
- return {
+    return {
      map {
          scalar $_->get_value('samaccountname') => {
              dn => $_->dn,
              description => scalar $_->get_value('description')
          }
      } @groups
- }
+    }
 }
 
 # AD LDAP helpers
@@ -328,148 +326,148 @@ sub _get_ad_user {
 }
 
 sub _ldap_quote {
- return join '', map { sprintf "\\%02x", $_ } unpack('C*',shift);
+    return join '', map { sprintf "\\%02x", $_ } unpack('C*',shift);
 }
 # with inspiration from
 # https://github.com/josephglanville/posix-ldap-overlay/blob/master/lib/SID.pm
 
 sub _unpack_sid {
- return unpack 'C Vxx C V*', shift;
+    return unpack 'C Vxx C V*', shift;
 }
 
 sub _sid2string {
- my ($rev, $auth, $sa_cnt, @sa) = _unpack_sid(shift);
- return join '-', 'S', $rev, $auth, @sa;
+    my ($rev, $auth, $sa_cnt, @sa) = _unpack_sid(shift);
+    return join '-', 'S', $rev, $auth, @sa;
 }
 
 sub _sid2rid {
- return [_unpack_sid(shift)]->[-1];
+    return [_unpack_sid(shift)]->[-1];
 }
 
 sub _rid2sid {
- my ($rev, $auth, $sacnt, @sa) = _unpack_sid(shift);
- $sa[-1] = shift;
- return pack 'C Vxx C V*', $rev, $auth, scalar @sa, @sa;
+    my ($rev, $auth, $sacnt, @sa) = _unpack_sid(shift);
+    $sa[-1] = shift;
+    return pack 'C Vxx C V*', $rev, $auth, scalar @sa, @sa;
 }
 
 
 # wrap and send an spnego token
 sub _send_spnego {
- my $self = shift;
- my $token = shift;
- my $mesg = Net::LDAP::Message->new($self);
- $mesg->encode(
-     bindRequest => {
-         name => '',
-         version => $self->version,
-         authentication => {
-             sasl => {
-                 mechanism => 'GSS-SPNEGO',
-                 credentials => $token
-             }
-         }
-     },
-     controls => undef
- );
+    my $self = shift;
+    my $token = shift;
+    my $mesg = Net::LDAP::Message->new($self);
+    $mesg->encode(
+        bindRequest => {
+            name => '',
+            version => $self->version,
+            authentication => {
+                sasl => {
+                    mechanism => 'GSS-SPNEGO',
+                    credentials => $token
+                }
+            }
+        },
+        controls => undef
+    );
  $self->_sendmesg($mesg);
 }
 
 # our BER encoder and decoder
 
 sub _ber_encoder {
- my $self = shift;
- return $self->{_ber_encoder} if $self->{_ber_encoder};
- my $enc = $self->{_ber_encoder} = Encoding::BER::DER->new( error => sub{ die "BER: $_[1]\n" } );
- $enc->add_implicit_tag('context', 'constructed', 'mechToken', 2,'octet_string');
- $enc->add_implicit_tag('context', 'constructed', 'supportedMech', 1,'oid');
- $enc->add_implicit_tag('context', 'constructed', 'negResult', 0,'enum');
- $enc->add_implicit_tag('application','constructed','spnego',0,'sequence');
+    my $self = shift;
+    return $self->{_ber_encoder} if $self->{_ber_encoder};
+    my $enc = $self->{_ber_encoder} = Encoding::BER::DER->new( error => sub{ die "BER: $_[1]\n" } );
+    $enc->add_implicit_tag('context', 'constructed', 'mechToken', 2,'octet_string');
+    $enc->add_implicit_tag('context', 'constructed', 'supportedMech', 1,'oid');
+    $enc->add_implicit_tag('context', 'constructed', 'negResult', 0,'enum');
+    $enc->add_implicit_tag('application','constructed','spnego',0,'sequence');
 };
 
 # prepare the ntlm token for the SPNEGO request to the ldap server
 sub _wrap_type1_token {
- my $self = shift;
- my $ntlm_token = shift;
- my $enc = $self->_ber_encoder;
- my $spnegoOID = '1.3.6.1.5.5.2';
- my $ntlmOID = '1.3.6.1.4.1.311.2.2.10';
- return  $enc->encode({
-     type => 'spnego',
-     value => [
-         {
-             type => 'oid',
-             value => $spnegoOID
-         },
-         {
-             type => ['context','constructed',0],
-             value => [{
-                 type => 'sequence',
-                 value => [
-                     {
-                         type => ['context','constructed',0],
-                         value => [{
-                             type => 'sequence',
-                             value => [
-                                 {
-        type => 'oid',
-        value => $ntlmOID
-                                 }
-                             ]
-                         }]
-                     },
-                     {
-                         type => 'mechToken',
-                         value => $ntlm_token
-                     }
-                 ]
-             }]
-         }
-     ]
- });
+    my $self = shift;
+       my $ntlm_token = shift;
+    my $enc = $self->_ber_encoder;
+    my $spnegoOID = '1.3.6.1.5.5.2';
+    my $ntlmOID = '1.3.6.1.4.1.311.2.2.10';
+    return  $enc->encode({
+        type => 'spnego',
+        value => [
+            {
+                type => 'oid',
+                value => $spnegoOID
+            },
+            {
+                type => ['context','constructed',0],
+                value => [{
+                    type => 'sequence',
+                    value => [
+                        {
+                            type => ['context','constructed',0],
+                            value => [{
+                                type => 'sequence',
+                                value => [
+                                    {
+           type => 'oid',
+           value => $ntlmOID
+                                    }
+                                ]
+                            }]
+                        },
+                        {
+                            type => 'mechToken',
+                            value => $ntlm_token
+                        }
+                    ]
+                }]
+            }
+        ]
+    });
 }
 
 # prepare the type3 token for next step in the authentication process
 sub _wrap_type3_token {
- my $self = shift;
- my $ntlm_token = shift;
- my $enc = $self->_ber_encoder;
- return $enc->encode({
-     type => ['context','constructed',1],
-     value => [{
-         type => 'sequence',
-         value => [{
-             type => 'mechToken',
-             value => $ntlm_token
-         }]
-     }]
- });
+       my $self = shift;
+       my $ntlm_token = shift;
+       my $enc = $self->_ber_encoder;
+       return $enc->encode({
+           type => ['context','constructed',1],
+           value => [{
+               type => 'sequence',
+               value => [{
+                   type => 'mechToken',
+                   value => $ntlm_token
+               }]
+           }]
+       });
 }
 
 # parse a ntlm type3 token to figure out the username, domain and host
 # of the connecting browser
 
 sub _get_user_from_ntlm_type3 {
- my $self = shift;
- my $msg = shift;
- my $sb = 'v xx V';
- my ($sig,$type,$lmL,$lmO,$ntL,$ntO,
-     $dnL,$dnO, #domain
-     $unL,$unO, #user
-     $hnL,$hnO, #host
-     $skL,$skO, #sessionkey
-     $flags, $osMin,$osMaj,$osBuild,$NTLMv) = unpack('Z8 V' . ($sb x 6) . ' V C C v C',$msg);
- # Parse a Type3 NTLM message (binary form, not encoded in Base64).
- #return a tuple (username, domain)
- my $NTLMSSP_NEGOTIATE_UNICODE = 0x00000001;
- my $username = substr($msg,$unO,$unL);
- # my $domain = substr($msg,$dnO,$dnL);
- # my $host = substr($msg,$hnO,$hnL);
- if ($flags & $NTLMSSP_NEGOTIATE_UNICODE){
-     # $domain = decode('utf-16-le',$domain);
-     $username =  decode('utf-16-le',$username);
-     # $host =  decode('utf-16-le',$host);
- }
- return $username;
+    my $self = shift;
+    my $msg = shift;
+    my $sb = 'v xx V';
+    my ($sig,$type,$lmL,$lmO,$ntL,$ntO,
+        $dnL,$dnO, #domain
+        $unL,$unO, #user
+        $hnL,$hnO, #host
+        $skL,$skO, #sessionkey
+        $flags, $osMin,$osMaj,$osBuild,$NTLMv) = unpack('Z8 V' . ($sb x 6) . ' V C C v C',$msg);
+    # Parse a Type3 NTLM message (binary form, not encoded in Base64).
+    #return a tuple (username, domain)
+    my $NTLMSSP_NEGOTIATE_UNICODE = 0x00000001;
+    my $username = substr($msg,$unO,$unL);
+    # my $domain = substr($msg,$dnO,$dnL);
+    # my $host = substr($msg,$hnO,$hnL);
+    if ($flags & $NTLMSSP_NEGOTIATE_UNICODE){
+        # $domain = decode('utf-16-le',$domain);
+        $username =  decode('utf-16-le',$username);
+        # $host =  decode('utf-16-le',$host);
+    }
+    return $username;
 }
 
 1;
