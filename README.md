@@ -4,6 +4,7 @@ Net::LDAP::SPNEGO - Net::LDAP support for ntlm/spnego authentication
 
 # SYNOPSIS
 
+```perl
     use Net::LDAP::SPNEGO;
     use Mojolicious::Lite;
 
@@ -84,6 +85,7 @@ Net::LDAP::SPNEGO - Net::LDAP support for ntlm/spnego authentication
         </ul>
     </body>
     </html>
+```
 
 # DESCRIPTION
 
