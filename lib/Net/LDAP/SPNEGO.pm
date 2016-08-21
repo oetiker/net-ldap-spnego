@@ -9,7 +9,6 @@ Net::LDAP::SPNEGO - Net::LDAP support for ntlm/spnego authentication
 
 =head1 SYNOPSIS
 
- #!/usr/bin/perl
  use Net::LDAP::SPNEGO;
  use Mojolicious::Lite;
 
@@ -483,9 +482,11 @@ The included example script F<eg/mojolite-demo.pl> shows how to use the module t
 NTLM authentication for a L<Mojolicious::Lite> webapplication. Use the following steps
 to run:
 
+
  $ perl Makefile.PL
  $ make 3rd
- $ env AD_SERVER=my-adserver.example.com ./eg/mojolite-demo.pl
+ $ env AD_SERVER=ad-server.example.com ./eg/mojolite-demo.pl
+
 =head1 ACKNOWLEGEMENTS
 
 Implementing this module would not have been possible without the access
