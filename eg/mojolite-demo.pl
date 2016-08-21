@@ -7,7 +7,7 @@ use lib "$FindBin::RealBin/../lib";
 use Net::LDAP::SPNEGO;
 use Mojolicious::Lite;
 
-my $SERVER = 'happy.oetiker.ch';
+my $SERVER = $ENV{AD_SERVER} // die "AD_SERVER env variable not set";
 
 my %cCache;
 
@@ -15,7 +15,7 @@ app->secrets(['My secret passphrase here']);
 
 hook before_dispatch => sub {
     my $c = shift;
-    
+
     # once the user property is set, we are happy
     # and don't try to re-authenticate
     return if $c->session('user');

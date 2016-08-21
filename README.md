@@ -4,11 +4,11 @@ Net::LDAP::SPNEGO - Net::LDAP support for ntlm/spnego authentication
 
 # SYNOPSIS
 
-```perl
+    #!/usr/bin/perl
     use Net::LDAP::SPNEGO;
     use Mojolicious::Lite;
 
-    my $SERVER = 'happy.oetiker.ch';
+    my $SERVER = $ENV{AD_SERVER} // die "AD_SERVER env variable not set";
 
     my %cCache;
 
@@ -85,7 +85,6 @@ Net::LDAP::SPNEGO - Net::LDAP support for ntlm/spnego authentication
         </ul>
     </body>
     </html>
-```
 
 # DESCRIPTION
 
@@ -199,11 +198,20 @@ containing the DN and the description of each group.
       }
     }
 
-# ACKNOWLEGEMENTS
+# EXAMPLE
+
+The included example script `eg/mojolite-demo.pl` shows how to use the module to implement
+NTLM authentication for a [Mojolicious::Lite](https://metacpan.org/pod/Mojolicious::Lite) webapplication. Use the following steps
+to run:
+
+    $ perl Makefile.PL
+    $ make 3rd
+    $
+   =head1 ACKNOWLEGEMENTS
 
 Implementing this module would not have been possible without the access
 to these imensly enlightening documents:
-[NTLM Authentication Scheme for HTTP](http://www.innovation.ch/personal/ronald/ntlm.html) by Ronald Tschalär,
+[NTLM Authentication Scheme for HTTP](http://www.innovation.ch/personal/ronald/ntlm.html) by Ronald TschalÃ¤r,
 [The NTLM Authentication Protocol and Security Support Provider](http://davenport.sourceforge.net/ntlm.html) by Eric Glass
 as well as [The PyAuthenNTLM2 Module](https://github.com/Legrandin/PyAuthenNTLM2) by Helder Eijs.
 
@@ -219,7 +227,7 @@ This program is free software; you can redistribute it and/or modify it under th
 
 # AUTHOR
 
-Tobias Oetiker <tobi@oetiker.ch>
+TobiasÂ OetikerÂ <tobi@oetiker.ch>
 
 # HISTORY
 

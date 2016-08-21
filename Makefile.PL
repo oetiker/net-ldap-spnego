@@ -44,6 +44,8 @@ sub MY::postamble {
    warn "** call 'make 3rd' to build missing dependencies ...\n";
    return <<"EOF";
 
+all:: README.md README
+
 README.md: lib/Net/LDAP/SPNEGO.pm
 	\$(PERL) -I$tpd/lib/perl5 -MPod::Markdown -e 'binmode(STDOUT, ":utf8");Pod::Markdown->new->filter(q{lib/Net/LDAP/SPNEGO.pm})' > README.md
 

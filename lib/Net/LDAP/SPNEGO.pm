@@ -1,18 +1,19 @@
 package Net::LDAP::SPNEGO;
-our $VERSION = '0.1.0';
-
-=head1 NAME
+our $VERSION = '0.1.1';
 
 =encoding utf8
+
+=head1 NAME
 
 Net::LDAP::SPNEGO - Net::LDAP support for ntlm/spnego authentication
 
 =head1 SYNOPSIS
 
+ #!/usr/bin/perl
  use Net::LDAP::SPNEGO;
  use Mojolicious::Lite;
 
- my $SERVER = 'happy.oetiker.ch';
+ my $SERVER = $ENV{AD_SERVER} // die "AD_SERVER env variable not set";
 
  my %cCache;
 
@@ -476,6 +477,15 @@ sub _get_user_from_ntlm_type3 {
 
 __END__
 
+=head1 EXAMPLE
+
+The included example script F<eg/mojolite-demo.pl> shows how to use the module to implement
+NTLM authentication for a L<Mojolicious::Lite> webapplication. Use the following steps
+to run:
+
+ $ perl Makefile.PL
+ $ make 3rd
+ $ env AD_SERVER=my-adserver.example.com ./eg/mojolite-demo.pl
 =head1 ACKNOWLEGEMENTS
 
 Implementing this module would not have been possible without the access

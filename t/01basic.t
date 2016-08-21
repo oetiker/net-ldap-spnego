@@ -6,4 +6,5 @@ use lib $FindBin::Bin.'/../lib';
 use Test::More;
 use_ok 'Net::LDAP::SPNEGO';
 
+
 done_testing;
