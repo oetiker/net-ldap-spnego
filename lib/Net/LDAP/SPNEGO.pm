@@ -1,5 +1,5 @@
 package Net::LDAP::SPNEGO;
-our $VERSION = '0.1.2';
+our $VERSION = '0.1.3';
 
 =encoding utf8
 
@@ -482,10 +482,18 @@ The included example script F<eg/mojolite-demo.pl> shows how to use the module t
 NTLM authentication for a L<Mojolicious::Lite> webapplication. Use the following steps
 to run:
 
-
  $ perl Makefile.PL
  $ make 3rd
- $ env AD_SERVER=ad-server.example.com ./eg/mojolite-demo.pl
+ $ env AD_SERVER=ad-server.example.com ./eg/mojolite-demo.pl deamon
+
+Now connect with your webbrowser to the webserver runing on port 3000. If you
+login from a Windows host and the url you are connecting resides in the local zone,
+you will see (or rather not see) seemless authentication take place. Finally
+a webpage will be displayed showing a list of groups you are a member of.
+
+The demo script stores your authentication in a cookie in your brower, so once
+you are authenticated, you will have to restart the browser or remove the cookie
+to force another authentication.
 
 =head1 ACKNOWLEGEMENTS
 
