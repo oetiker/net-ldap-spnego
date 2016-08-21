@@ -1,5 +1,5 @@
 package Net::LDAP::SPNEGO;
-our $VERSION = '0.1.3';
+our $VERSION = '0.1.4';
 
 =encoding utf8
 

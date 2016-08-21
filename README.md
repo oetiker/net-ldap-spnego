@@ -164,8 +164,8 @@ Authorization: NTLM base64encodedntlmtoken
 The bind\_type3 call will return a [Net::LDAP::Message](https://metacpan.org/pod/Net::LDAP::Message) object received from the
 AD server in the same way the [Net::LDAP](https://metacpan.org/pod/Net::LDAP) call will in a regular bind request.
 
-The respone will contain an additional an additional property: _ldap\_user\_entry_
-containing the properties of the ldap user entry.
+The response object comes with an extra property: _ldap\_user\_entry_
+containing the ldap user entry information.
 
 ```perl
 {
@@ -184,14 +184,14 @@ containing the properties of the ldap user entry.
 
 ## my $group\_hash = $ldap->get\_value\_ad\_groups($username)
 
-Query the ldap server for all the groups the user is a member of,
+Query the ldap server for all the users group memberships,
 including the primary group and all the inherited memberships due to
 a group being a member of another group.
 
-The function uses the magic _member:1.2.840.113556.1.4.1941:_ property
+The function uses the magic _member:1.2.840.113556.1.4.1941:_ query
 to effect a recursive search.
 
-The function returns a hash indexed by the sAMAccountNames of the groups
+The function returns a hash indexed by the _sAMAccountName_s of the groups
 containing the DN and the description of each group.
 
 ```perl
