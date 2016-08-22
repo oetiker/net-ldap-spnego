@@ -114,10 +114,10 @@ like this:
 In contrast to modern web APIs, the NTLM authentication exchange relies on a presistant
 connection between browser and server to correlate steps 2 and 3 of the dialog.
 
-The example above uses [Mojolicious::Lite](https://metacpan.org/pod/Mojolicious::Lite) but there is no inherent link to
-that particular framework, except that NTLM authentication relies on a persistant
-http connetions (keepalive) to linke the multi step authentication together.
-In other words, a CGI implementation will not work, since the cgi process gets.
+The example above uses [Mojolicious::Lite](https://metacpan.org/pod/Mojolicious::Lite) but there is no inherent dependency on
+that particular framework, except that NTLM authentication relies on a persistent
+http connections (keepalive) to link the multi step authentication together.
+In other words, a CGI implementation will not work since the CGI process gets
 restarted with every request.
 
 Windows will only engage in seamless NTLM negotiation with sites residing in the
