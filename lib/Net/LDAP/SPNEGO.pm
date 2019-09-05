@@ -141,7 +141,7 @@ use warnings;
 
 use parent 'Net::LDAP';
 use Net::LDAP::Constant qw(LDAP_SASL_BIND_IN_PROGRESS LDAP_SUCCESS LDAP_LOCAL_ERROR);
-
+use Net::LDAP::Util qw(escape_filter_value);
 use MIME::Base64 qw(decode_base64 encode_base64);
 use Net::LDAP::Message;
 use Encoding::BER::DER;
@@ -275,8 +275,8 @@ sub get_ad_groups {
         base => $self->_get_base_dn,
         filter => '(|'
         .'(objectSID='._ldap_quote($primaryGroupSID).')'
-        .'(member:1.2.840.113556.1.4.1941:='.$userDN.')'
-        .'(member:1.2.840.113556.1.4.1941:='.$primaryGroup->dn.')'
+        .'(member:1.2.840.113556.1.4.1941:='.escape_filter_value($userDN).')'
+        .'(member:1.2.840.113556.1.4.1941:='.escape_filter_value($primaryGroup->dn).')'
         .')',
         attrs => ['sAMAccountName','description']
     )->entries;
@@ -313,7 +313,7 @@ sub _get_ad_user {
  my $user = $self->search(
      base => $self->_get_base_dn,
      scope => 'sub',
-     filter => "(sAMAccountName=".$sAMAccountName.')',
+     filter => "(sAMAccountName=".escape_filter_value($sAMAccountName).')',
      attrs => [],
  )->entry(0);
 
