@@ -271,7 +271,8 @@ sub get_ad_groups {
         attrs => [],
     )->entry(0);
 
-    my @groups = $self->search(
+    my @groups;
+    my $search = $self->search(
         base => $self->_get_base_dn,
         filter => '(|'
         .'(objectSID='._ldap_quote($primaryGroupSID).')'
@@ -279,7 +280,20 @@ sub get_ad_groups {
         .'(member:1.2.840.113556.1.4.1941:='.escape_filter_value($primaryGroup->dn).')'
         .')',
         attrs => ['sAMAccountName','description']
-    )->entries;
+    );
+    if ($search->is_error) {
+        warn "LDAP Search failed: ".$search->error;
+        return {};
+    }
+    while (my $entry = eval { $search->shift_entry }){
+        push @groups, $entry;
+    };
+    if ($@) {
+        warn "Problem fetching search entry $@";
+    }
+    if ($search->is_error) {
+        warn "LDAP Search error: ".$search->error;
+    }
 
     return {
      map {
