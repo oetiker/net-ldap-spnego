@@ -516,6 +516,7 @@ to these imensly enlightening documents:
 L<NTLM Authentication Scheme for HTTP|http://www.innovation.ch/personal/ronald/ntlm.html> by Ronald Tschalär,
 L<The NTLM Authentication Protocol and Security Support Provider|http://davenport.sourceforge.net/ntlm.html> by Eric Glass
 as well as L<The PyAuthenNTLM2 Module|https://github.com/Legrandin/PyAuthenNTLM2> by Helder Eijs.
+Also very helpful is the L<official documentation from Microsoft|https://winprotocoldoc.blob.core.windows.net/productionwindowsarchives/MS-NLMP/%5bMS-NLMP%5d.pdf>.
 
 Thank you for makeing that information avaialble.
 
